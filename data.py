@@ -83,3 +83,83 @@ def download_dataset(db_name='mnist', dist_path='data'):
 
     # Remove compressed data
     os.remove(save_path)
+
+
+def get_batch(image_files, width, height, mode):
+    """
+    Get batch of images.
+
+    Args:
+        image_files (list): list of paths to the images
+        width (int): image width
+        height (int): image height
+        mode (str): Pillow image mode
+
+    Returns:
+
+    """
+    data_batch = np.array(
+        [get_image(sample_file, width, height, mode) for sample_file in image_files]
+    ).astype(np.float32)
+
+    if len(data_batch.shape) < 4:
+        data_batch = data_batch.reshape((-1, width, height, 1))
+    return data_batch
+
+
+def get_image(image_path, width, height, mode):
+    """
+    Read image from image path.
+
+    Args:
+        image_path (str): path to the image
+        width (int): image path
+        height (int): image height
+        mode (str): Pillow image mode
+
+    Returns (np.ndarray): numpy ndarray
+
+    """
+    image = Image.open(image_path)
+    return np.asarray(image.convert(mode))
+
+
+def preprocess_mnist(data):
+    return data / 255.
+
+
+def image_grid(images, rows, cols, w, h, c, mode):
+    """
+    Get Pillow image object with grid of images.
+
+    Args:
+        images (np.ndarray): numpy array
+        rows (int): number of rows in a grid
+        cols (int): number of cols in a grid
+        w (int): image width
+        h (int): image height
+        c (c): number of channels
+        mode (str): Pillow mode
+
+    Returns (PIL.Image): image object
+
+    """
+    assert len(images) == rows * cols, "Number of images should be multiple of rows*cols"
+
+    # Scale to 0-255
+    images = (((images - images.min()) * 255) / (images.max() - images.min())).astype(np.uint8)
+
+    # Put images in a square arrangement
+    w_orig = images.shape[1]
+    h_orig = images.shape[2]
+    images = images.reshape((rows, cols, w_orig, h_orig, c))
+
+    # Combine images to grid image
+    new_im = Image.new(mode, (w*cols, h*rows))
+    for i_row in range(rows):
+        for i_col in range(cols):
+            image = images[i_row, i_col, :, :, :].squeeze()
+            im = Image.fromarray(image, mode).resize((w, h))
+            new_im.paste(im, (i_col * w, i_row * h))
+
+    return new_im
