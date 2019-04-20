@@ -163,3 +163,32 @@ def image_grid(images, rows, cols, w, h, c, mode):
             new_im.paste(im, (i_col * w, i_row * h))
 
     return new_im
+
+
+class Dataset(object):
+    """Dataset loader object"""
+
+    def __init__(self, db_name, data_files):
+        IMAGE_WIDTH = 28
+        IMAGE_HEIGHT = 28
+
+        db_name = db_name.lower()
+        if db_name == "mnist":
+            self.image_mode = 'L'
+            image_channels = 1
+
+        self.data_files = data_files
+        self.shape = len(data_files), IMAGE_WIDTH, IMAGE_HEIGHT, image_channels
+
+    def get_batches(self, batch_size):
+        """Generate batches of data"""
+
+        current_index = 0
+        while current_index + batch_size <= self.shape[0]:
+            data_batch = get_batch(
+                self.data_files[current_index:current_index+batch_size],
+                *self.shape[1:3],
+                self.image_mode
+            )
+            current_index += batch_size
+            yield data_batch / 255. - 0.5
