@@ -42,6 +42,9 @@ def train(config):
         os.makedirs(log_dir)
     log_fn = f"{config['data.dataset']}_{datetime.datetime.now():%Y-%m-%d_%H:%M}.log"
     log_fn = os.path.join(log_dir, log_fn)
+    gen_output_path = os.path.join(config['train.exp_dir'], 'gen_output')
+    if not os.path.exists(gen_output_path):
+        os.makedirs(gen_output_path)
     print(f"All info about training can be found in {log_fn}")
 
     # Determine device
@@ -159,7 +162,7 @@ def train(config):
                                                  state['step']))
             gen_output = model.get_generator_output(8, 200, 'L').numpy()
             images_grid = image_grid(gen_output, 2, 4, 28, 28, 1, 'L')
-            images_grid.save(f"results/gen_output/{state['epoch']}-{state['step']}.jpg")
+            images_grid.save(f"{gen_output_path}/{state['epoch']}-{state['step']}.jpg")
     train_engine.hooks['on_start_batch'] = on_start_batch
 
     def on_end_batch(state):
