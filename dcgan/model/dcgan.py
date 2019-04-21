@@ -9,10 +9,11 @@ from tensorflow.keras.activations import tanh
 
 
 class DCGAN(Model):
-    def __init__(self):
+    def __init__(self, n_channels=1):
         super(DCGAN, self).__init__()
 
-        out_channel_dim = 1
+        # Number of channels in image
+        self.channels = n_channels
         # Leaky relu parameter
         self.alpha = 0.2
 
@@ -21,7 +22,7 @@ class DCGAN(Model):
             Conv2D(64, 3, strides=2, padding='same'),
             LeakyReLU(self.alpha),
 
-            Conv2D(64, 3, strides=2, padding='same'),
+            Conv2D(64, 3, strides=1, padding='same'),
             LeakyReLU(self.alpha),
 
             Conv2D(128, 3, strides=2, padding='same'),
@@ -32,7 +33,7 @@ class DCGAN(Model):
             BatchNormalization(),
             LeakyReLU(self.alpha),
 
-            Dense(1, kernel_initializer=tf.initializers.GlorotNormal())
+            Dense(self.channels, kernel_initializer=tf.initializers.GlorotNormal())
         ])
 
         # Generator
@@ -41,15 +42,15 @@ class DCGAN(Model):
             Reshape((7, 7, 256)),
             LeakyReLU(self.alpha),
 
-            Conv2DTranspose(128, 5, strides=2, padding='same'),
+            Conv2DTranspose(128, 3, strides=2, padding='same'),
             BatchNormalization(),
             LeakyReLU(self.alpha),
 
-            Conv2DTranspose(64, 5, strides=1, padding='same'),
+            Conv2DTranspose(64, 3, strides=1, padding='same'),
             BatchNormalization(),
             LeakyReLU(self.alpha),
 
-            Conv2DTranspose(1, 5, strides=2, padding='same'),
+            Conv2DTranspose(self.channels, 5, strides=2, padding='same'),
         ])
 
     def call(self, input_real, input_z):
@@ -84,7 +85,6 @@ class DCGAN(Model):
 
 
     def get_generator_output(self, n_images, z_dim, image_mode):
-        c_map = None if image_mode == 'RGB' else 'gray'
         example_z = np.random.uniform(-1, 1, size=[n_images, z_dim])
 
         samples = tf.keras.activations.tanh(self.g(example_z))

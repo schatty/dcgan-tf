@@ -21,7 +21,7 @@ def preprocess_config(c):
 
 
 parser = argparse.ArgumentParser(description='Run training of DCGAN')
-parser.add_argument("--config", type=str, default="./scripts/mnist.conf",
+parser.add_argument("--config", type=str, default="./scripts/celeba.conf",
                     help="Path to the config file.")
 
 # Run training

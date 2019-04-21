@@ -5,6 +5,8 @@ import numpy as np
 from PIL import Image
 import gzip
 from tqdm import tqdm
+import zipfile
+from glob import glob
 
 
 def _read32(bytestream):
@@ -51,16 +53,39 @@ def _ungzip(save_path, extract_path, database_name, *args):
             os.path.join(extract_path, 'image_{}.jpg'.format(image_i)))
 
 
+def _unzip(save_path, _, db_name, data_path):
+    """
+    Unzip with the same interface as _ungzip
+
+    Args:
+        save_path (str): the path of the gzip files
+        _:
+        db_name (str): name of the database
+        data_path (str): path to extract to
+
+    Returns: None
+
+    """
+    print('Extracting {}...'.format(db_name))
+    with zipfile.ZipFile(save_path) as zf:
+        zf.extractall(data_path)
+
+
 def download_dataset(db_name='mnist', dist_path='data'):
     """Download image database from given name"""
     db_name = db_name.lower()
-    assert db_name in ['mnist'], "Unknown database name"
+    assert db_name in ['mnist', 'celeba'], "Unknown database name"
 
     if db_name == 'mnist':
         url = 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz'
         extract_path = os.path.join(dist_path, 'mnist')
         save_path = os.path.join(dist_path, 'train-images-idx3-ubyte.gz')
         extract_fn = _ungzip
+    elif db_name == "celeba":
+        url = 'https://s3-us-west-1.amazonaws.com/udacity-dlnfd/datasets/celeba.zip'
+        extract_path = os.path.join(dist_path, 'img_align_celeba')
+        save_path = os.path.join(dist_path, 'celeba.zip')
+        extract_fn = _unzip
 
     if os.path.exists(extract_path):
         print('Found {} Data'.format(db_name))
@@ -70,8 +95,9 @@ def download_dataset(db_name='mnist', dist_path='data'):
         os.makedirs(dist_path)
 
     if not os.path.exists(save_path):
-        print("Downloading...")
-        urlretrieve(url, save_path)
+        with MyProgress(unit='B', unit_scale=True, miniters=1,
+                        desc=f"Downloading {db_name}") as pbar:
+            urlretrieve(url, save_path, pbar.hook)
 
     os.makedirs(extract_path)
     try:
@@ -85,7 +111,7 @@ def download_dataset(db_name='mnist', dist_path='data'):
     os.remove(save_path)
 
 
-def get_batch(image_files, width, height, mode):
+def get_batch(image_files, width, height, mode, celeba=False):
     """
     Get batch of images.
 
@@ -99,7 +125,7 @@ def get_batch(image_files, width, height, mode):
 
     """
     data_batch = np.array(
-        [get_image(sample_file, width, height, mode) for sample_file in image_files]
+        [get_image(sample_file, width, height, mode, celeba) for sample_file in image_files]
     ).astype(np.float32)
 
     if len(data_batch.shape) < 4:
@@ -107,7 +133,7 @@ def get_batch(image_files, width, height, mode):
     return data_batch
 
 
-def get_image(image_path, width, height, mode):
+def get_image(image_path, width, height, mode, celeba=False):
     """
     Read image from image path.
 
@@ -116,11 +142,19 @@ def get_image(image_path, width, height, mode):
         width (int): image path
         height (int): image height
         mode (str): Pillow image mode
+        celeba (bool): flag to process celeba image
 
     Returns (np.ndarray): numpy ndarray
 
     """
     image = Image.open(image_path)
+    if celeba:
+        face_width = face_height = 108
+        j = (image.size[0] - face_width) // 2
+        i = (image.size[1] - face_height) // 2
+        image = image.crop([j, i, j + face_width, i + face_height])
+        image = image.resize([width, height], Image.BILINEAR)
+
     return np.asarray(image.convert(mode))
 
 
@@ -168,17 +202,23 @@ def image_grid(images, rows, cols, w, h, c, mode):
 class Dataset(object):
     """Dataset loader object"""
 
-    def __init__(self, db_name, data_files):
+    def __init__(self, db_name, data_dir):
         IMAGE_WIDTH = 28
         IMAGE_HEIGHT = 28
 
-        db_name = db_name.lower()
-        if db_name == "mnist":
+        self.db_name = db_name.lower()
+        if self.db_name == "mnist":
             self.image_mode = 'L'
-            image_channels = 1
+            channels = 1
+            download_dataset("MNIST", data_dir)
+            self.data_files = glob(os.path.join(data_dir, "mnist/*.jpg"))
+        elif self.db_name == "celeba":
+            self.image_mode = 'RGB'
+            channels = 3
+            download_dataset("celeba", data_dir)
+            self.data_files = glob(os.path.join(data_dir, "img_align_celeba/*.jpg"))
 
-        self.data_files = data_files
-        self.shape = len(data_files), IMAGE_WIDTH, IMAGE_HEIGHT, image_channels
+        self.shape = len(self.data_files), IMAGE_WIDTH, IMAGE_HEIGHT, channels
 
     def get_batches(self, batch_size):
         """Generate batches of data"""
@@ -188,7 +228,16 @@ class Dataset(object):
             data_batch = get_batch(
                 self.data_files[current_index:current_index+batch_size],
                 *self.shape[1:3],
-                self.image_mode
+                self.image_mode,
+                celeba=self.db_name=="celeba"
             )
             current_index += batch_size
             yield data_batch / 255. - 0.5
+
+
+class MyProgress(tqdm):
+    last_block = 0
+    def hook(self, block_num=1, block_size=1, total_size=None):
+        self.total = total_size
+        self.update((block_num - self.last_block) * block_size)
+        self.last_block = block_num

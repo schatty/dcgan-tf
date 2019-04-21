@@ -32,7 +32,6 @@ class TrainEngine(object):
         for epoch in range(state['epochs']):
             self.hooks['on_start_epoch'](state)
             for batch_images in state['loader'].get_batches(batch):
-                #print("Epoch ", state['epoch'], "Batch+1")
                 state['sample'] = batch_images
                 self.hooks['on_start_batch'](state)
                 self.hooks['on_end_batch'](state)

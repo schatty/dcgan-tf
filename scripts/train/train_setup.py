@@ -17,7 +17,7 @@ logging.getLogger("PIL").setLevel(logging.WARNING)
 import tensorflow as tf
 tf.config.gpu.set_per_process_memory_growth(True)
 
-from dcgan.data import download_dataset, get_batch, preprocess_mnist, image_grid, Dataset
+from dcgan.data import image_grid, Dataset
 from dcgan.model import DCGAN
 from dcgan import TrainEngine
 
@@ -55,10 +55,8 @@ def train(config):
         print("Training on CPU")
         device_name = 'CPU:0'
 
-    # TODO: move to the Dataset constructor
-    download_dataset("MNIST")
-
     img_w, img_h, img_c = list(map(int, config['model.x_dim'].split(',')))
+    img_mode = config['data.img_mode']
     print("Image width: ", img_w)
     print("Image height: ", img_h)
     print("Image channels: ", img_c)
@@ -79,7 +77,7 @@ def train(config):
     train_log_dir = config['train.tb_dir'] + current_time + '/train'
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
 
-    model = DCGAN()
+    model = DCGAN(img_c)
 
     def train_step(input_real, input_z, step):
         # Train step for generator
@@ -108,8 +106,8 @@ def train(config):
     epochs = config['train.epochs']
     dataset_name = config['data.dataset']
     data_dir = config['data.datadir']
-    mnist_dataset = Dataset(dataset_name, glob(os.path.join(data_dir, "mnist/*.jpg")))
-    n_samples, img_width, img_height, n_channels = mnist_dataset.shape
+    dataset = Dataset(dataset_name, data_dir)
+    n_samples, img_width, img_height, n_channels = dataset.shape
 
     print("n_samples: ", n_samples)
     print("img_width: ", img_width)
@@ -140,7 +138,7 @@ def train(config):
 
     def on_start_batch(state):
         step = state['step']
-
+        batch_size = state['batch']
         batch_images = state['sample']
         # Rescale batch images
         batch_images = scale_img(batch_images)
@@ -160,8 +158,8 @@ def train(config):
             # TODO: Remove
             print("Epoch {}/{}. Batch {}".format(state['epoch'], epochs,
                                                  state['step']))
-            gen_output = model.get_generator_output(8, 200, 'L').numpy()
-            images_grid = image_grid(gen_output, 2, 4, 28, 28, 1, 'L')
+            gen_output = model.get_generator_output(8, z_dim, img_mode).numpy()
+            images_grid = image_grid(gen_output, 2, 4, img_w, img_h, img_c, img_mode)
             images_grid.save(f"{gen_output_path}/{state['epoch']}-{state['step']}.jpg")
     train_engine.hooks['on_start_batch'] = on_start_batch
 
@@ -178,7 +176,7 @@ def train(config):
 
     with tf.device(device_name):
         train_engine.train(
-            loader=mnist_dataset,
+            loader=dataset,
             epochs=epochs,
             batch=batch_size
         )
