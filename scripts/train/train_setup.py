@@ -1,12 +1,12 @@
-import numpy as np
 import os
+import numpy as np
 from glob import glob
-import tensorflow as tf
 
+import tensorflow as tf
 tf.config.gpu.set_per_process_memory_growth(True)
 
 from dcgan.data import download_dataset, get_batch, preprocess_mnist, image_grid, Dataset
-from model import DCGAN
+from dcgan.model import DCGAN
 
 
 def scale_img(x):
@@ -14,10 +14,9 @@ def scale_img(x):
     return x * 2
 
 
-if __name__ == "__main__":
+def train(config):
     # Determine device
     if tf.test.is_gpu_available():
-        print("GPU available")
         cuda_num = 0
         device_name = f'GPU:{cuda_num}'
     else:
@@ -27,18 +26,16 @@ if __name__ == "__main__":
     # TODO: move to the Dataset constructor
     download_dataset("MNIST")
 
-    '''
-    image_paths = glob(os.path.join(data_dir, 'mnist/*.jpg'))[:10]
-    image_batch = get_batch(image_paths, width=28, height=28, mode="L")
-    image_batch = preprocess_mnist(image_batch)
-    print(image_batch.shape, np.max(image_batch))
-    '''
+    img_w, img_h, img_c = list(map(int, config['model.x_dim'].split(',')))
+    print("Image width: ", img_w)
+    print("Image height: ", img_h)
+    print("Image channels: ", img_c)
 
-    beta_1 = 0.001
-    beta_2 = 0.999
-    lr_g = 0.001
+    beta_1 = config['train.beta_1']
+    beta_2 = config['train.beta_2']
+    lr_g = config['train.lr_generator']
     g_optimizer = tf.optimizers.Adam(lr_g, beta_1=beta_1, beta_2=beta_2)
-    lr_d = 0.001
+    lr_d = config['train.lr_discriminator']
     d_optimizer = tf.optimizers.Adam(lr_d, beta_1=beta_1, beta_2=beta_2)
 
     # Metrics to gather
@@ -69,13 +66,12 @@ if __name__ == "__main__":
         train_d_loss(d_loss)
 
     # Main training loop
-    batch_size = 128
-    z_dim = 200
-    learning_rate = 0.001
-    beta1 = 0.001
-
-    epochs = 10
-    mnist_dataset = Dataset("mnist", glob(os.path.join(data_dir, "mnist/*.jpg")))
+    batch_size = config['data.batch']
+    z_dim = config['model.z_dim']
+    epochs = config['train.epochs']
+    dataset_name = config['data.dataset']
+    data_dir = config['data.datadir']
+    mnist_dataset = Dataset(dataset_name, glob(os.path.join(data_dir, "mnist/*.jpg")))
     n_samples, img_width, img_height, n_channels = mnist_dataset.shape
 
     print("n_samples: ", n_samples)
