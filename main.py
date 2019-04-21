@@ -33,10 +33,12 @@ if __name__ == "__main__":
     image_batch = preprocess_mnist(image_batch)
     print(image_batch.shape, np.max(image_batch))
 
+    beta_1 = 0.001
+    beta_2 = 0.999
     lr_g = 0.001
-    g_optimizer = tf.keras.optimizers.Adam(lr_g)
+    g_optimizer = tf.optimizers.Adam(lr_g, beta_1=beta_1, beta_2=beta_2)
     lr_d = 0.001
-    d_optimizer = tf.keras.optimizers.Adam(lr_d)
+    d_optimizer = tf.optimizers.Adam(lr_d, beta_1=beta_1, beta_2=beta_2)
 
     # Metrics to gather
     train_g_loss = tf.metrics.Mean(name='g_loss')
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     learning_rate = 0.001
     beta1 = 0.001
 
-    epochs = 5
+    epochs = 10
     mnist_dataset = Dataset("mnist", glob(os.path.join(data_dir, "mnist/*.jpg")))
     n_samples, img_width, img_height, n_channels = mnist_dataset.shape
 

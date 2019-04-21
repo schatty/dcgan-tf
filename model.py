@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, Bidirectional, \
-    BatchNormalization, ReLU, MaxPool2D, Conv2DTranspose, Reshape
+    BatchNormalization, LeakyReLU, MaxPool2D, Conv2DTranspose, Reshape
 from tensorflow.keras import Model
+from tensorflow.keras.activations import tanh
 
 
 class DCGAN(Model):
@@ -12,37 +13,41 @@ class DCGAN(Model):
         super(DCGAN, self).__init__()
 
         out_channel_dim = 1
+        # Leaky relu parameter
+        self.alpha = 0.2
 
+        # Discriminator
         self.d = tf.keras.Sequential([
             Conv2D(64, 3, strides=2, padding='same'),
-            ReLU(),
+            LeakyReLU(self.alpha),
 
-            Conv2D(64, 3, strides=1, padding='same'),
-            ReLU(),
+            Conv2D(64, 3, strides=2, padding='same'),
+            LeakyReLU(self.alpha),
 
             Conv2D(128, 3, strides=2, padding='same'),
             BatchNormalization(),
-            ReLU(),
+            LeakyReLU(self.alpha),
 
             Conv2D(256, 3, strides=1, padding='same'),
             BatchNormalization(),
-            ReLU(),
+            LeakyReLU(self.alpha),
 
-            Dense(1)
+            Dense(1, kernel_initializer=tf.initializers.GlorotNormal())
         ])
 
+        # Generator
         self.g = tf.keras.Sequential([
             Dense(7*7*256),
             Reshape((7, 7, 256)),
-            ReLU(),
+            LeakyReLU(self.alpha),
 
             Conv2DTranspose(128, 5, strides=2, padding='same'),
             BatchNormalization(),
-            ReLU(),
+            LeakyReLU(self.alpha),
 
             Conv2DTranspose(64, 5, strides=1, padding='same'),
             BatchNormalization(),
-            ReLU(),
+            LeakyReLU(self.alpha),
 
             Conv2DTranspose(1, 5, strides=2, padding='same'),
         ])
@@ -52,7 +57,7 @@ class DCGAN(Model):
         input_z = tf.cast(input_z, tf.float32)
 
         # Generate new image
-        g_model = tf.keras.activations.tanh(self.g(input_z))
+        g_model = tanh(self.g(input_z))
         # Discriminate real images as real
         d_logits_real = self.d(input_real)
         # Discriminate fake images
