@@ -36,9 +36,9 @@ Dataset of 102 different flowers from Visual Geometry Group of Oxford university
 
 ## Tests
 Tests contains training procedure that stops after very first batch, run following commands to check
-* `python -m unittess tests/test_mnist.py`
-* `python -m unittess tests/test_celeba.py`
-* `python -m unittess tests/test_flowers.py`
+* `python -m unittest tests/test_mnist.py`
+* `python -m unittest tests/test_celeba.py`
+* `python -m unittest tests/test_flowers.py`
 
 ## Results
 Representative outputs from generator can be found in `results` folder. 
