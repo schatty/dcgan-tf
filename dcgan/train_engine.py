@@ -29,7 +29,7 @@ class TrainEngine(object):
         }
 
         self.hooks['on_start'](state)
-        for epoch in range(state['epochs']):
+        for _ in tqdm(range(state['epochs'])):
             self.hooks['on_start_epoch'](state)
             for batch_images in state['loader'].get_batches(batch):
                 state['sample'] = batch_images

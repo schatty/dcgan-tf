@@ -21,9 +21,9 @@ def make_gif(source_dir, output):
         img = Image.open(path)
         frames.append(img)
     frames[0].save(output, format='GIF', append_images=frames[1:],
-                   save_all=True, duration=5*len(frames), loop=0)
+                   save_all=True, duration=1*len(frames), loop=0)
 
 
 if __name__ == "__main__":
-    make_gif(source_dir="results/celeba/gen_output",
-             output="results/celeba/gen_output/gen.gif")
+    make_gif(source_dir="results/mnist/gen_output",
+             output="results/mnist/gen_output/gen.gif")

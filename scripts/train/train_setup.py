@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from glob import glob
 import datetime
 import time
 from shutil import copyfile
@@ -49,17 +48,13 @@ def train(config):
 
     # Determine device
     if tf.test.is_gpu_available():
-        cuda_num = 0
-        device_name = f'GPU:{cuda_num}'
+        device_name = f"GPU:{config['data.cuda']}"
     else:
         print("Training on CPU")
         device_name = 'CPU:0'
 
     img_w, img_h, img_c = list(map(int, config['model.x_dim'].split(',')))
     img_mode = config['data.img_mode']
-    print("Image width: ", img_w)
-    print("Image height: ", img_h)
-    print("Image channels: ", img_c)
 
     beta_1 = config['train.beta_1']
     beta_2 = config['train.beta_2']
@@ -104,20 +99,10 @@ def train(config):
     batch_size = config['data.batch']
     z_dim = config['model.z_dim']
     epochs = config['train.epochs']
-    dataset_name = config['data.dataset']
-    data_dir = config['data.datadir']
-    dataset = Dataset(dataset_name, data_dir)
-    n_samples, img_width, img_height, n_channels = dataset.shape
-
-    print("n_samples: ", n_samples)
-    print("img_width: ", img_width)
-    print("img_height: ", img_height)
-    print("n_channels: ", n_channels)
-
+    dataset = Dataset(config)
     train_engine = TrainEngine()
 
     # Set hooks on training engine
-
     def on_start(state):
         logging.info("Training started.")
         train_g_loss.reset_states()
@@ -155,9 +140,7 @@ def train(config):
             tf.summary.scalar('d_loss', train_d_loss.result(), step=step)
 
         if state['step'] % 100 == 0:
-            # TODO: Remove
-            print("Epoch {}/{}. Batch {}".format(state['epoch'], epochs,
-                                                 state['step']))
+            print("Epoch {}/{}. Batch {}".format(state['epoch'], epochs, state['step']))
             gen_output = model.get_generator_output(8, z_dim, img_mode).numpy()
             images_grid = image_grid(gen_output, 2, 4, img_w, img_h, img_c, img_mode)
             images_grid.save(f"{gen_output_path}/{state['epoch']}-{state['step']}.jpg")
