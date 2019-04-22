@@ -48,7 +48,7 @@ def train(config):
 
     # Determine device
     if tf.test.is_gpu_available():
-        device_name = f"GPU:{config['data.cuda']}"
+        device_name = f"GPU:{config['data.gpu']}"
     else:
         print("Training on CPU")
         device_name = 'CPU:0'

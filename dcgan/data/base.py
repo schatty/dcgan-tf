@@ -235,6 +235,7 @@ class Dataset(object):
         db_name = config['data.dataset']
         data_dir = config['data.datadir']
         img_w, img_h, img_c = list(map(int, config['model.x_dim'].split(',')))
+        self.test_mode = config['train.test_mode']
         self.db_name = db_name.lower()
         if self.db_name == "mnist":
             self.image_mode = 'L'
@@ -269,6 +270,7 @@ class Dataset(object):
             )
             current_index += batch_size
             yield data_batch / 255. - 0.5
+            if self.test_mode: break
 
 
 class MyProgress(tqdm):

@@ -21,7 +21,7 @@ class TestCeleba(unittest.TestCase):
             'train.exp_dir': 'results/celeba',
             'train.log_dir': 'results/celeba/logs',
             'train.tb_dir': 'results/celeba/tensorboard/',
-
+            'train.test_mode': True,
             'model.x_dim': '28,28,3',
             'model.z_dim': 500,
             'model.save_dir':'tests/results/models/celeba'

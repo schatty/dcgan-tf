@@ -21,7 +21,7 @@ class TestFlowers(unittest.TestCase):
             'train.exp_dir': 'results/flowers',
             'train.log_dir': 'results/flowers/logs',
             'train.tb_dir': 'results/flowers/tensorboard/',
-
+            'train.test_mode': True,
             'model.x_dim': '64,64,3',
             'model.z_dim': 500,
             'model.save_dir':'tests/results/models/flowers'

@@ -21,7 +21,7 @@ class TestMnist(unittest.TestCase):
             'train.exp_dir': 'results/mnist',
             'train.log_dir': 'results/mnist/logs',
             'train.tb_dir': 'results/mnist/tensorboard/',
-
+            'train.test_mode': True,
             'model.x_dim': '28,28,1',
             'model.z_dim': 200,
             'model.save_dir':'tests/results/models/mnist'
